@@ -271,3 +271,190 @@
 .auth-footer {
   /* Remove this if it conflicts */
 }
+
+/* ── Password toggle ─────────────────────────── */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input-wrapper input {
+  padding-right: 48px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  line-height: 1;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #10b981;
+}
+
+/* ── Forgot password link ───────────────────── */
+.auth-forgot-link {
+  text-align: right;
+  margin-top: -12px;
+  margin-bottom: 8px;
+}
+
+.auth-forgot-link a {
+  color: #10b981;
+  font-size: 14px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-forgot-link a:hover {
+  text-decoration: underline;
+}
+
+/* ── Divider ────────────────────────────────── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* ── Google button wrapper ──────────────────── */
+.google-btn-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.google-btn-wrapper > div {
+  width: 100% !important;
+}
+
+/* ── Success message ────────────────────────── */
+.success-message {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* ── Error message ──────────────────────────── */
+.error-message {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* ── Google role-selection modal ────────────── */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.auth-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 32px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.auth-modal h3 {
+  color: #1f2937;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.auth-modal p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.role-choice-btns {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.role-choice-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 28px;
+  transition: all 0.2s;
+  color: #374151;
+}
+
+.role-choice-btn span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.role-choice-btn.selected {
+  border-color: #10b981;
+  background: #f0fdf4;
+  color: #065f46;
+}
+
+.role-choice-btn.selected span {
+  color: #10b981;
+}
+
+.role-choice-btn:hover:not(.selected) {
+  border-color: #d1fae5;
+  background: #f9fafb;
+}
+
+/* ── Generic link button ────────────────────── */
+.btn-link {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 12px;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: #6b7280;
+}

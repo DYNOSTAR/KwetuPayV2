@@ -25,8 +25,8 @@ const getAvailableProperties = async (req, res) => {
       SELECT 
         p.property_id, p.landlord_id, p.title, p.description, p.property_type, 
         p.rent_amount, p.currency, p.bedrooms, p.bathrooms, p.area_sqft,
-        p.address, p.city, p.neighborhood, p.latitude, p.longitude, 
-        p.amenities, p.images, p.is_available, p.created_at,
+        p.address, p.city, p.neighborhood, p.latitude, p.longitude,
+        p.amenities, p.images, p.location_details, p.is_available, p.created_at,
         u.first_name AS landlord_name, u.phone_number AS landlord_phone,
         u.email AS landlord_email,
         COUNT(pu.unit_id) as total_units,
@@ -71,7 +71,8 @@ const getAvailableProperties = async (req, res) => {
     const properties = result.rows.map((property) => ({
       ...property,
       amenities: safeJSON(property.amenities),
-      images: safeJSON(property.images)
+      images: safeJSON(property.images),
+      location_details: safeJSON(property.location_details)
     }));
 
     res.json({
@@ -98,11 +99,11 @@ const getAvailablePropertiesWithUnits = async (req, res) => {
     const { city, min_price, max_price, property_type } = req.query;
 
     let baseQuery = `
-      SELECT 
-        p.property_id, p.landlord_id, p.title, p.description, p.property_type, 
+      SELECT
+        p.property_id, p.landlord_id, p.title, p.description, p.property_type,
         p.rent_amount, p.currency, p.bedrooms, p.bathrooms, p.area_sqft,
-        p.address, p.city, p.neighborhood, p.latitude, p.longitude, 
-        p.amenities, p.images, p.is_available, p.created_at,
+        p.address, p.city, p.neighborhood, p.latitude, p.longitude,
+        p.amenities, p.images, p.location_details, p.is_available, p.created_at,
         u.first_name AS landlord_name, u.phone_number AS landlord_phone,
         u.email AS landlord_email,
         COUNT(pu.unit_id) as total_units,
@@ -140,14 +141,17 @@ const getAvailablePropertiesWithUnits = async (req, res) => {
       queryParams.push(parseFloat(max_price));
     }
 
-    baseQuery += ' GROUP BY p.property_id, u.user_id ORDER BY p.created_at DESC';
+    baseQuery += ` GROUP BY p.property_id, u.user_id
+      HAVING COUNT(CASE WHEN pu.status = 'available' THEN 1 END) > 0
+      ORDER BY p.created_at DESC`;
 
     const result = await query(baseQuery, queryParams);
 
     const properties = result.rows.map((property) => ({
       ...property,
       amenities: safeJSON(property.amenities),
-      images: safeJSON(property.images)
+      images: safeJSON(property.images),
+      location_details: safeJSON(property.location_details)
     }));
 
     res.json({
@@ -176,8 +180,9 @@ const getAvailableUnitsByProperty = async (req, res) => {
     // Get property basic info
     const propertyResult = await query(
       `
-      SELECT 
+      SELECT
         p.property_id, p.title, p.property_type, p.address, p.city,
+        p.latitude, p.longitude, p.location_details,
         u.first_name AS landlord_name, u.phone_number AS landlord_phone
       FROM properties p
       JOIN users u ON p.landlord_id = u.user_id
@@ -215,10 +220,13 @@ const getAvailableUnitsByProperty = async (req, res) => {
       amenities: safeJSON(unit.amenities)
     }));
 
+    const property = propertyResult.rows[0];
+    property.location_details = safeJSON(property.location_details);
+
     res.json({
       status: 'success',
       data: {
-        property: propertyResult.rows[0],
+        property,
         units: units,
         units_count: units.length
       }
@@ -256,7 +264,8 @@ const createProperty = async (req, res) => {
       latitude,
       longitude,
       amenities,
-      units = [] // New: Array of units for multi-unit properties
+      location_details,
+      units = []
     } = req.body;
 
     // ✅ Helper to safely convert to number or null
@@ -282,7 +291,8 @@ const createProperty = async (req, res) => {
       neighborhood || '',
       safeNumber(latitude),
       safeNumber(longitude),
-      amenities ? JSON.stringify(amenities) : null
+      amenities ? JSON.stringify(amenities) : null,
+      location_details ? JSON.stringify(location_details) : '{}'
     ];
 
     const propertyResult = await client.query(
@@ -290,9 +300,9 @@ const createProperty = async (req, res) => {
       INSERT INTO properties (
         landlord_id, title, description, property_type, rent_amount, currency,
         bedrooms, bathrooms, area_sqft, address, city, neighborhood,
-        latitude, longitude, amenities
+        latitude, longitude, amenities, location_details
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
       RETURNING *
       `,
       queryParams
@@ -674,8 +684,8 @@ const getPropertyById = async (req, res) => {
       SELECT 
         p.property_id, p.landlord_id, p.title, p.description, p.property_type, 
         p.rent_amount, p.currency, p.bedrooms, p.bathrooms, p.area_sqft,
-        p.address, p.city, p.neighborhood, p.latitude, p.longitude, 
-        p.amenities, p.images, p.is_available, p.created_at,
+        p.address, p.city, p.neighborhood, p.latitude, p.longitude,
+        p.amenities, p.images, p.location_details, p.is_available, p.created_at,
         u.first_name AS landlord_name, u.phone_number AS landlord_phone,
         u.email AS landlord_email
       FROM properties p
@@ -692,6 +702,7 @@ const getPropertyById = async (req, res) => {
     const property = result.rows[0];
     property.amenities = safeJSON(property.amenities);
     property.images = safeJSON(property.images);
+    property.location_details = safeJSON(property.location_details);
 
     res.json({ status: 'success', data: { property } });
   } catch (error) {
@@ -723,7 +734,8 @@ const updateProperty = async (req, res) => {
       neighborhood,
       latitude,
       longitude,
-      amenities
+      amenities,
+      location_details
     } = req.body;
 
     // Check if property exists and belongs to user
@@ -763,8 +775,9 @@ const updateProperty = async (req, res) => {
         latitude = COALESCE($11, latitude),
         longitude = COALESCE($12, longitude),
         amenities = COALESCE($13, amenities),
+        location_details = COALESCE($14, location_details),
         updated_at = NOW()
-      WHERE property_id = $14 AND landlord_id = $15
+      WHERE property_id = $15 AND landlord_id = $16
       RETURNING *
       `,
       [
@@ -781,6 +794,7 @@ const updateProperty = async (req, res) => {
         safeNumber(latitude),
         safeNumber(longitude),
         amenities ? JSON.stringify(amenities) : null,
+        location_details ? JSON.stringify(location_details) : null,
         propertyId,
         req.user.user_id
       ]
@@ -791,6 +805,7 @@ const updateProperty = async (req, res) => {
     const property = result.rows[0];
     property.amenities = safeJSON(property.amenities);
     property.images = safeJSON(property.images);
+    property.location_details = safeJSON(property.location_details);
 
     res.json({
       status: 'success',

@@ -107,6 +107,7 @@ const FindProperties = () => {
       };
 
       const bookingData = {
+        property_id: property.property_id,
         unit_id: unit.unit_id,
         start_date: formatDateLocal(startDate),
         end_date: formatDateLocal(endDate),
@@ -114,9 +115,7 @@ const FindProperties = () => {
         special_terms: `Interested in viewing Unit ${unit.unit_number}. Please contact me to discuss further details.`
       };
 
-      console.log('Booking data:', bookingData);
-
-      const response = await bookingAPI.createBooking(bookingData);
+      const response = await bookingAPI.create(bookingData);
       
       if (response.data.status === 'success') {
         setSuccessMessage(`Booking request submitted for Unit ${unit.unit_number}!`);
@@ -541,6 +540,36 @@ const FindProperties = () => {
               </div>
               
               <div className="units-modal-content">
+                {/* Property location summary inside modal */}
+                <div className="modal-property-location">
+                  <div className="modal-location-row">
+                    <span>📍</span>
+                    <span>{selectedPropertyUnits.property.city}{selectedPropertyUnits.property.address && `, ${selectedPropertyUnits.property.address}`}</span>
+                  </div>
+                  {selectedPropertyUnits.property.location_details?.shopping_centre && (
+                    <div className="modal-location-row">
+                      <span>🏬</span>
+                      <span>Near {selectedPropertyUnits.property.location_details.shopping_centre}</span>
+                    </div>
+                  )}
+                  {selectedPropertyUnits.property.location_details?.nearby_roads && (
+                    <div className="modal-location-row">
+                      <span>🛣️</span>
+                      <span>Along {selectedPropertyUnits.property.location_details.nearby_roads}</span>
+                    </div>
+                  )}
+                  {selectedPropertyUnits.property.latitude && selectedPropertyUnits.property.longitude && (
+                    <a
+                      href={`https://www.google.com/maps?q=${selectedPropertyUnits.property.latitude},${selectedPropertyUnits.property.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="modal-maps-link"
+                    >
+                      📍 View on Google Maps ↗
+                    </a>
+                  )}
+                </div>
+
                 {unitsLoading ? (
                   <div className="loading-section">
                     <div className="loading-spinner"></div>

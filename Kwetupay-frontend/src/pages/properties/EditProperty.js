@@ -21,6 +21,11 @@ const EditProperty = () => {
     neighborhood: '',
     latitude: '',
     longitude: '',
+    location_details: {
+      shopping_centre: '',
+      nearby_roads: '',
+      town: ''
+    },
     amenities: {
       wifi: false,
       parking: false,
@@ -87,6 +92,9 @@ const EditProperty = () => {
           neighborhood: propertyData.neighborhood || '',
           latitude: propertyData.latitude || '',
           longitude: propertyData.longitude || '',
+          location_details: propertyData.location_details || {
+            shopping_centre: '', nearby_roads: '', town: ''
+          },
           amenities: propertyData.amenities || {
             wifi: false, parking: false, water: false,
             electricity: false, security: false, furnished: false,
@@ -119,6 +127,15 @@ const EditProperty = () => {
         amenities: {
           ...prev.amenities,
           [amenityName]: checked
+        }
+      }));
+    } else if (name.startsWith('location_details.')) {
+      const detailKey = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        location_details: {
+          ...prev.location_details,
+          [detailKey]: value
         }
       }));
     } else {
@@ -252,6 +269,7 @@ const EditProperty = () => {
         description: formData.description || '',
         rent_amount: parseFloat(formData.rent_amount),
         amenities: formData.amenities || {},
+        location_details: formData.location_details || {},
         units: isMultiUnit ? units : []
       };
 
@@ -614,6 +632,32 @@ const EditProperty = () => {
               value={formData.neighborhood}
               onChange={handleChange}
               placeholder="e.g., Westlands, Kilimani"
+              className="form-input"
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Nearest Shopping Centre / Mall</label>
+            <input
+              type="text"
+              name="location_details.shopping_centre"
+              value={formData.location_details?.shopping_centre || ''}
+              onChange={handleChange}
+              placeholder="e.g., Westgate Mall, Junction Mall"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Nearby Road / Highway</label>
+            <input
+              type="text"
+              name="location_details.nearby_roads"
+              value={formData.location_details?.nearby_roads || ''}
+              onChange={handleChange}
+              placeholder="e.g., Ngong Road, Waiyaki Way"
               className="form-input"
             />
           </div>

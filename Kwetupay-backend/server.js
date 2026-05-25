@@ -80,6 +80,67 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Run idempotent DB migrations at startup
+(async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE properties ADD COLUMN IF NOT EXISTS location_details JSONB DEFAULT '{}'::jsonb
+    `);
+    console.log('✅ DB: location_details column ready');
+  } catch (err) {
+    console.warn('⚠️ DB migration warning:', err.message);
+  }
+
+  // Add landlord bank details column
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_details JSONB DEFAULT NULL`);
+    console.log('✅ DB: bank_details column ready');
+  } catch (err) {
+    console.warn('⚠️ DB bank_details warning:', err.message);
+  }
+
+  // Add email verification columns
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMPTZ`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT`);
+    console.log('✅ DB: auth columns ready');
+  } catch (err) {
+    console.warn('⚠️ DB auth column warning:', err.message);
+  }
+
+  // Fix check_property_availability trigger to check per-unit, not per-property.
+  // The old trigger blocked approving multiple bookings for different units in the same property.
+  try {
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION check_property_availability()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        IF NEW.booking_status = 'approved' AND (OLD.booking_status IS DISTINCT FROM 'approved') THEN
+          IF NEW.unit_id IS NOT NULL THEN
+            IF EXISTS (
+              SELECT 1 FROM bookings
+              WHERE unit_id = NEW.unit_id
+                AND booking_status = 'approved'
+                AND booking_id != NEW.booking_id
+            ) THEN
+              RAISE EXCEPTION 'Unit already has an approved booking';
+            END IF;
+          END IF;
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+    console.log('✅ DB: check_property_availability trigger updated to unit-level');
+  } catch (err) {
+    console.warn('⚠️ DB trigger update warning:', err.message);
+  }
+})();
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🎯 Kwetupay Server running on port ${PORT}`);

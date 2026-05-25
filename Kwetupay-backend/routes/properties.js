@@ -25,6 +25,39 @@ const router = express.Router();
  * IMPORTANT: Static routes MUST come before dynamic routes (/:propertyId)
  */
 
+// Public available properties (no auth required — used by landing page)
+router.get('/public/available', async (req, res) => {
+  const { query: dbQuery } = require('../config/database');
+  try {
+    const result = await dbQuery(`
+      SELECT
+        p.property_id, p.title, p.property_type, p.rent_amount, p.currency,
+        p.address, p.city, p.neighborhood, p.images, p.bedrooms, p.bathrooms,
+        u.first_name AS landlord_name,
+        COUNT(pu.unit_id) AS total_units,
+        COUNT(CASE WHEN pu.status = 'available' THEN 1 END) AS available_units
+      FROM properties p
+      JOIN users u ON p.landlord_id = u.user_id
+      LEFT JOIN property_units pu ON p.property_id = pu.property_id
+      WHERE p.is_available = true
+      GROUP BY p.property_id, u.user_id
+      HAVING COUNT(CASE WHEN pu.status = 'available' THEN 1 END) > 0
+      ORDER BY p.created_at DESC
+      LIMIT 12
+    `);
+
+    const properties = result.rows.map(p => ({
+      ...p,
+      images: typeof p.images === 'string' ? (() => { try { return JSON.parse(p.images); } catch { return []; } })() : (p.images || [])
+    }));
+
+    res.json({ status: 'success', data: { properties, count: properties.length } });
+  } catch (error) {
+    console.error('Public properties fetch error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch properties' });
+  }
+});
+
 // Upload property image (static route)
 router.post(
   '/upload-image',
@@ -59,7 +92,7 @@ router.get('/available', authenticateToken, getAvailableProperties);
 router.get(
   '/tenant/available',
   authenticateToken,
-  authorizeRoles(['tenant', 'landlord', 'admin']),
+  authorizeRoles('tenant', 'landlord', 'admin'),
   getAvailablePropertiesWithUnits
 );
 
@@ -84,7 +117,7 @@ router.post(
 router.get(
   '/:propertyId/units/available',
   authenticateToken,
-  authorizeRoles(['tenant', 'landlord', 'admin']),
+  authorizeRoles('tenant', 'landlord', 'admin'),
   getAvailableUnitsByProperty
 );
 

@@ -56,6 +56,39 @@ router.post('/', authenticateToken, authorizeRoles('tenant'), async (req, res) =
       });
     }
 
+    // Block tenant who already has an active lease from booking again
+    const activeLeaseCheck = await client.query(
+      `SELECT l.lease_id FROM leases l
+       JOIN bookings b ON l.booking_id = b.booking_id
+       WHERE b.tenant_id = $1 AND l.status = 'active'
+       LIMIT 1`,
+      [req.user.user_id]
+    );
+    if (activeLeaseCheck.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        status: 'error',
+        message: 'You already have an active lease. You cannot book another property while your lease is active.'
+      });
+    }
+
+    // Block duplicate booking requests for the same unit
+    if (unit_id) {
+      const dupCheck = await client.query(
+        `SELECT booking_id FROM bookings
+         WHERE unit_id = $1 AND tenant_id = $2
+           AND booking_status IN ('pending', 'approved')`,
+        [unit_id, req.user.user_id]
+      );
+      if (dupCheck.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          status: 'error',
+          message: 'You already have a pending or approved booking for this unit.'
+        });
+      }
+    }
+
     const landlord_id = property.landlord_id;
     const calculatedRent = total_rent || property.rent_amount;
 
@@ -246,8 +279,10 @@ router.put('/:bookingId/status', authenticateToken, authorizeRoles('landlord'), 
 
     // Verify booking belongs to landlord
     const bookingCheck = await client.query(
-      `SELECT b.booking_id, b.tenant_id, b.property_id, b.start_date, b.end_date, b.total_rent
+      `SELECT b.booking_id, b.tenant_id, b.property_id, b.unit_id, b.start_date, b.end_date, b.total_rent,
+              pu.unit_number, pu.rent_amount as unit_rent
        FROM bookings b
+       LEFT JOIN property_units pu ON b.unit_id = pu.unit_id
        WHERE b.booking_id = $1 AND b.landlord_id = $2`,
       [parseInt(bookingId), req.user.user_id]
     );
@@ -268,39 +303,29 @@ router.put('/:bookingId/status', authenticateToken, authorizeRoles('landlord'), 
       [status, parseInt(bookingId)]
     );
 
-    // If approved, create lease
     if (status === 'approved') {
-      const leaseResult = await client.query(
-        `INSERT INTO leases (
-          booking_id, lease_number, start_date, end_date, monthly_rent, status
-        ) VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *`,
-        [
-          parseInt(bookingId),
-          `LEASE-${Date.now()}`,
-          booking.start_date,
-          booking.end_date,
-          booking.total_rent,
-          'active'
-        ]
-      );
-
       await client.query('COMMIT');
 
-      // Notify tenant
+      const monthlyRent = parseFloat(booking.unit_rent || booking.total_rent);
+      const depositAmount = monthlyRent;
+      const totalFirstPayment = monthlyRent + depositAmount;
+
+      // Notify tenant with full payment breakdown
       emitToUser(booking.tenant_id, 'booking:updated', {
         booking_id: booking.booking_id,
         status: status,
-        lease_id: leaseResult.rows[0].lease_id,
-        message: 'Your booking has been approved and lease created'
+        monthly_rent: monthlyRent,
+        deposit_amount: depositAmount,
+        total_first_payment: totalFirstPayment,
+        unit_number: booking.unit_number,
+        message: `Your booking has been approved! First payment of KES ${totalFirstPayment.toLocaleString()} (rent + deposit) is now due. Please proceed to payment to activate your lease.`
       });
 
       res.json({
         status: 'success',
-        message: 'Booking approved and lease created successfully',
+        message: 'Booking approved successfully. Tenant can now proceed to payment.',
         data: {
-          booking: bookingResult.rows[0],
-          lease: leaseResult.rows[0]
+          booking: bookingResult.rows[0]
         }
       });
     } else {

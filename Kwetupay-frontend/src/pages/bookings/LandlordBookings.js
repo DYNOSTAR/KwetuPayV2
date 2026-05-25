@@ -51,7 +51,7 @@ const LandlordBookings = () => {
       const response = await bookingAPI.updateStatus(bookingId, 'approved');
       
       if (response.data.status === 'success') {
-        alert('Booking approved successfully! A lease has been created.');
+        alert('Booking approved! The tenant will be notified to proceed with payment.');
         fetchLandlordBookings(); // Refresh the list
       } else {
         alert(response.data.message || 'Failed to approve booking');

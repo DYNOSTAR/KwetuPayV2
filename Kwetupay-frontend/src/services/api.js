@@ -40,11 +40,18 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
+  googleLogin: (credential, role) => api.post('/auth/google', { credential, role }),
+  changePassword: (data) => api.post('/auth/change-password', data),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, new_password) => api.post('/auth/reset-password', { token, new_password }),
+  resendVerification: () => api.post('/auth/resend-verification'),
+  verifyEmail: (token) => api.get(`/auth/verify-email?token=${token}`),
 };
 
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (profileData) => api.put('/users/profile', profileData),
+  updateBankDetails: (data) => api.put('/users/bank-details', data),
 };
 
 // In src/services/api.js - Replace propertyAPI section with this:
@@ -72,28 +79,25 @@ export const propertyAPI = {
   getMyProperties: () => api.get('/properties/my-properties'),
   toggleAvailability: (propertyId) => api.put(`/properties/${propertyId}/toggle-availability`),
   
-  // Unit management
-  getPropertyUnits: (propertyId) => api.get(`/units/property/${propertyId}`),
+  // Unit management (landlord)
+  getPropertyUnitsLandlord: (propertyId) => api.get(`/units/property/${propertyId}`),
   createUnit: (propertyId, data) => api.post(`/units/property/${propertyId}`, data),
   updateUnit: (unitId, data) => api.patch(`/units/${unitId}`, data),
   deleteUnit: (unitId) => api.delete(`/units/${unitId}`),
-  
+
   // Image upload
-  uploadImage: (formData) => {
-    return api.post('/properties/upload-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  },
-   getAvailableWithUnits: (filters = {}) => {
+  uploadImage: (formData) => api.post('/properties/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+
+  // Tenant: properties with available unit counts
+  getAvailableWithUnits: (filters = {}) => {
     const queryString = new URLSearchParams(filters).toString();
     return api.get(`/properties/tenant/available?${queryString}`);
   },
-  
-  getPropertyUnits: (propertyId) => {
-    return api.get(`/properties/${propertyId}/units/available`);
-  }
+
+  // Tenant: available units for a specific property
+  getPropertyUnits: (propertyId) => api.get(`/properties/${propertyId}/units/available`),
 };
 
 export const tenantAPI = {
@@ -108,28 +112,22 @@ export const tenantAPI = {
 };
 
 export const bookingAPI = {
-  // Create booking request (tenants only)
+  // Tenant
   create: (bookingData) => api.post('/bookings', bookingData),
-  
-  // Get tenant's bookings
   getMyBookings: () => api.get('/bookings/my-bookings'),
-  
-  // Get landlord's booking requests
-  getLandlordRequests: () => api.get('/bookings/landlord-requests'),
-  
-  // Update booking status (landlords only)
+  cancel: (bookingId) => api.put(`/bookings/${bookingId}/cancel`),
+  // Landlord
+  getLandlordRequests: () => api.get('/bookings/landlord-requests'),   // pending only
+  getLandlordBookings: () => api.get('/bookings/landlord/bookings'),   // all statuses
   updateStatus: (bookingId, status) => api.put(`/bookings/${bookingId}/status`, { status }),
-
-   getMyBookings: () => api.get('/bookings/my-bookings'),
-  cancel: (bookingId) => api.put(`/bookings/${bookingId}/cancel`),
-
-
-  
-  // Cancel booking (tenants only)
-  cancel: (bookingId) => api.put(`/bookings/${bookingId}/cancel`),
 };
 
 export const healthCheck = () => api.get('/health');
+
+// Public (no auth) — used by the landing page
+export const publicAPI = {
+  getAvailableProperties: () => axios.get(`${API_BASE_URL}/properties/public/available`),
+};
 
 export const messageAPI = {
   getConversations: () => api.get('/messages/conversations'),
@@ -142,19 +140,22 @@ export const messageAPI = {
 
 export const leaseAPI = {
   getMyLeases: () => api.get('/leases/my-leases'),
+  getLandlordLeases: () => api.get('/leases/landlord/active'),
   getLeaseById: (leaseId) => api.get(`/leases/${leaseId}`),
   getLeasePayments: (leaseId) => api.get(`/leases/${leaseId}/payments`),
 };
 export const paymentAPI = {
   // Tenant payments
   getMyPayments: () => api.get('/payments/my-payments'),
+  getApprovedBookings: () => api.get('/payments/approved-bookings'),
+  getBankDetails: (params) => api.get('/payments/bank-details', { params }),
   initiateMpesa: (paymentData) => api.post('/payments/mpesa', paymentData),
-  
+  processBookingPayment: (bookingId, data) => api.post(`/payments/booking/${bookingId}/process`, data),
+
   // Landlord payments
   getLandlordPayments: () => api.get('/payments/landlord/payments'),
-  
-  // Webhook for M-Pesa callback
-  mpesaWebhook: (webhookData) => api.post('/payments/mpesa-webhook', webhookData),
+  getPendingBankPayments: () => api.get('/payments/landlord/pending-bank'),
+  confirmBankPayment: (paymentId, action) => api.patch(`/payments/${paymentId}/confirm`, { action }),
 };
 export const maintenanceAPI = {
   // Tenant methods
@@ -167,15 +168,15 @@ export const maintenanceAPI = {
   getRequestById: (requestId) => api.get(`/maintenance/${requestId}`),
 };
 
-// Add to your existing api.js
 export const adminAPI = {
   getDashboardStats: () => api.get('/admin/dashboard/stats'),
   getUsers: (params) => api.get('/admin/users', { params }),
+  updateUserStatus: (userId, isActive) => api.patch(`/admin/users/${userId}/status`, { isActive }),
   getProperties: (params) => api.get('/admin/properties', { params }),
-  getBookings: (params) => api.get('/admin/bookings', { params }),
-  updateBookingStatus: (id, status) => api.patch(`/admin/bookings/${id}/status`, { status }),
   updatePropertyStatus: (id, status) => api.patch(`/admin/properties/${id}/status`, { status }),
   deleteProperty: (id) => api.delete(`/admin/properties/${id}`),
+  getBookings: (params) => api.get('/admin/bookings', { params }),
+  updateBookingStatus: (id, status) => api.patch(`/admin/bookings/${id}/status`, { status }),
 };
 
 export default api;

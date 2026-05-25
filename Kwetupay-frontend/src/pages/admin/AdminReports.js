@@ -16,7 +16,7 @@ const AdminReports = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.role !== 'admin' && parsedUser.role !== 'super_admin') {
-        navigate('/properties');
+        navigate('/login');
         return;
       }
       setUser(parsedUser);

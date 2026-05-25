@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { publicAPI } from '../services/api';
 import './landing.css';
 
 const Landing = () => {
@@ -11,6 +12,7 @@ const Landing = () => {
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [availableProperties, setAvailableProperties] = useState([]);
 
   // Auto-slide background every 4 seconds with smooth transition
   useEffect(() => {
@@ -19,6 +21,19 @@ const Landing = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [images.length]);
+
+  useEffect(() => {
+    publicAPI.getAvailableProperties()
+      .then(res => {
+        if (res.data.status === 'success') {
+          setAvailableProperties(res.data.data.properties || []);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(price);
 
   return (
     <div className="landing-page">
@@ -58,7 +73,7 @@ const Landing = () => {
               Discover amazing rental properties, connect with landlords, and manage everything in one place.
             </p>
             <div className="hero-buttons">
-              <button onClick={() => navigate('/properties')} className="cta-btn primary">
+              <button onClick={() => navigate('/login')} className="cta-btn primary">
                 <span className="btn-icon">🔍</span>
                 Browse Properties
               </button>
@@ -90,6 +105,51 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* Available Properties Section */}
+      {availableProperties.length > 0 && (
+        <section className="landing-properties-section">
+          <div className="container">
+            <h2>Available Vacancies</h2>
+            <p className="section-subtitle">Browse open units — sign in to book your preferred space</p>
+            <div className="landing-properties-grid">
+              {availableProperties.map(property => (
+                <div key={property.property_id} className="landing-property-card">
+                  <div className="landing-property-image">
+                    {property.images && property.images.length > 0 ? (
+                      <img src={property.images[0]} alt={property.title} />
+                    ) : (
+                      <div className="landing-property-image-placeholder">🏠</div>
+                    )}
+                    <span className="landing-units-badge">
+                      {property.available_units} unit{property.available_units !== 1 ? 's' : ''} available
+                    </span>
+                  </div>
+                  <div className="landing-property-info">
+                    <h3>{property.title}</h3>
+                    <p className="landing-property-location">📍 {property.city}{property.neighborhood ? `, ${property.neighborhood}` : ''}</p>
+                    <div className="landing-property-meta">
+                      <span className="landing-property-type">{property.property_type}</span>
+                      <span className="landing-property-price">{formatPrice(property.rent_amount)}<small>/mo</small></span>
+                    </div>
+                    <button
+                      className="landing-book-btn"
+                      onClick={() => navigate('/login')}
+                    >
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="landing-properties-cta">
+              <button onClick={() => navigate('/login')} className="cta-btn secondary">
+                View All Properties
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="features-section">
@@ -163,14 +223,14 @@ const Landing = () => {
             <div className="footer-links">
               <div className="link-group">
                 <h4>For Tenants</h4>
-                <Link to="/properties">Search Properties</Link>
+                <Link to="/login">Search Properties</Link>
                 <Link to="/how-it-works">How It Works</Link>
                 <Link to="/faq">FAQ</Link>
               </div>
               <div className="link-group">
                 <h4>For Landlords</h4>
-                <Link to="/list-property">List Property</Link>
-                <Link to="/dashboard">Manage Properties</Link>
+                <Link to="/register">List Property</Link>
+                <Link to="/login">Manage Properties</Link>
                 <Link to="/support">Support</Link>
               </div>
               <div className="link-group">

@@ -138,6 +138,50 @@ router.get('/my-leases', authenticateToken, authorizeRoles('tenant'), async (req
   }
 });
 
+// Get landlord's active leases (tenant list view) — MUST be before /:leaseId
+router.get('/landlord/active', authenticateToken, authorizeRoles('landlord'), async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT
+        l.lease_id, l.lease_number, l.start_date, l.end_date, l.monthly_rent,
+        l.security_deposit, l.status, l.created_at,
+        u.unit_number, u.unit_type,
+        p.property_id, p.title as property_title, p.address, p.city,
+        t.user_id as tenant_id, t.first_name as tenant_name, t.last_name as tenant_last_name,
+        t.phone_number as tenant_phone, t.email as tenant_email,
+        (SELECT MAX(payment_date) FROM payments
+         WHERE lease_id = l.lease_id AND status = 'completed' AND payment_type = 'rent') as last_payment_date,
+        (SELECT COALESCE(SUM(amount), 0) FROM payments
+         WHERE lease_id = l.lease_id AND status = 'completed') as total_paid
+       FROM leases l
+       JOIN bookings b ON l.booking_id = b.booking_id
+       JOIN property_units u ON b.unit_id = u.unit_id
+       JOIN properties p ON u.property_id = p.property_id
+       JOIN users t ON b.tenant_id = t.user_id
+       WHERE p.landlord_id = $1 AND l.status = 'active'
+       ORDER BY l.created_at DESC`,
+      [req.user.user_id]
+    );
+
+    const today = new Date();
+    const leases = result.rows.map(lease => {
+      const endDate = new Date(lease.end_date);
+      const daysRemaining = Math.ceil((endDate - today) / (24 * 60 * 60 * 1000));
+      return {
+        ...lease,
+        days_remaining: daysRemaining,
+        is_expiring_soon: daysRemaining > 0 && daysRemaining <= 30,
+        total_paid: parseFloat(lease.total_paid) || 0
+      };
+    });
+
+    res.json({ status: 'success', data: { leases, count: leases.length } });
+  } catch (error) {
+    console.error('Landlord leases fetch error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch leases' });
+  }
+});
+
 // Get lease by ID with comprehensive details
 router.get('/:leaseId', authenticateToken, validateLeaseId, async (req, res) => {
   const client = await getClient();

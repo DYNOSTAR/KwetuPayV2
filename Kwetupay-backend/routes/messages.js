@@ -143,7 +143,74 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Other message routes remain the same...
-// (get /with/:userId, put /read, get /unread-count, get /online-status/:userId)
+// Get full message history with a specific user
+router.get('/with/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await query(
+      `SELECT
+        m.message_id,
+        m.sender_id,
+        m.receiver_id as recipient_id,
+        m.message_text as content,
+        m.is_read,
+        m.created_at,
+        u.first_name as sender_name,
+        u.role as sender_role
+       FROM messages m
+       JOIN users u ON m.sender_id = u.user_id
+       WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+          OR (m.sender_id = $2 AND m.receiver_id = $1)
+       ORDER BY m.created_at ASC`,
+      [req.user.user_id, parseInt(userId)]
+    );
+    res.json({ status: 'success', data: { messages: result.rows } });
+  } catch (error) {
+    console.error('Messages fetch error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch messages' });
+  }
+});
+
+// Mark messages from a sender as read
+router.put('/read', authenticateToken, async (req, res) => {
+  try {
+    const { sender_id } = req.body;
+    await query(
+      `UPDATE messages SET is_read = true
+       WHERE receiver_id = $1 AND sender_id = $2 AND is_read = false`,
+      [req.user.user_id, sender_id]
+    );
+    res.json({ status: 'success', message: 'Messages marked as read' });
+  } catch (error) {
+    console.error('Mark read error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to mark messages as read' });
+  }
+});
+
+// Get unread message count
+router.get('/unread-count', authenticateToken, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT COUNT(*) as unread FROM messages
+       WHERE receiver_id = $1 AND is_read = false`,
+      [req.user.user_id]
+    );
+    res.json({ status: 'success', data: { unread: parseInt(result.rows[0].unread) || 0 } });
+  } catch (error) {
+    console.error('Unread count error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to get unread count' });
+  }
+});
+
+// Get online status of a user
+router.get('/online-status/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const isOnline = getOnlineUsers().has(userId.toString());
+    res.json({ status: 'success', data: { user_id: parseInt(userId), is_online: isOnline } });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'Failed to get online status' });
+  }
+});
 
 module.exports = router;

@@ -4,6 +4,26 @@ import PropertiesLayout from '../properties/PropertiesLayout';
 import { maintenanceAPI } from '../../services/api';
 import './Maintenance.css';
 
+// Defined at module level so both LandlordMaintenance and RequestCard can use them
+const getStatusBadge = (status) => {
+  const statusConfig = {
+    pending: { class: 'status-pending', label: '⏳ Pending' },
+    in_progress: { class: 'status-progress', label: '🔧 In Progress' },
+    completed: { class: 'status-completed', label: '✅ Completed' },
+    cancelled: { class: 'status-cancelled', label: '❌ Cancelled' }
+  };
+  return statusConfig[status] || { class: 'status-unknown', label: status };
+};
+
+const getUrgencyBadge = (urgency) => {
+  const urgencyConfig = {
+    high: { class: 'urgency-high', label: '🔴 High' },
+    medium: { class: 'urgency-medium', label: '🟡 Medium' },
+    low: { class: 'urgency-low', label: '🟢 Low' }
+  };
+  return urgencyConfig[urgency] || { class: 'urgency-unknown', label: urgency };
+};
+
 const LandlordMaintenance = () => {
   const [user, setUser] = useState(null);
   const [requests, setRequests] = useState([]);
@@ -84,25 +104,6 @@ const LandlordMaintenance = () => {
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { class: 'status-pending', label: '⏳ Pending' },
-      in_progress: { class: 'status-progress', label: '🔧 In Progress' },
-      completed: { class: 'status-completed', label: '✅ Completed' },
-      cancelled: { class: 'status-cancelled', label: '❌ Cancelled' }
-    };
-    return statusConfig[status] || { class: 'status-unknown', label: status };
-  };
-
-  const getUrgencyBadge = (urgency) => {
-    const urgencyConfig = {
-      high: { class: 'urgency-high', label: '🔴 High' },
-      medium: { class: 'urgency-medium', label: '🟡 Medium' },
-      low: { class: 'urgency-low', label: '🟢 Low' }
-    };
-    return urgencyConfig[urgency] || { class: 'urgency-unknown', label: urgency };
   };
 
   const handleLogout = () => {

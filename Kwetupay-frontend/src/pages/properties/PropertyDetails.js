@@ -10,17 +10,22 @@ const PropertyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
   const [activeImage, setActiveImage] = useState(0);
+  const [availableUnits, setAvailableUnits] = useState([]);
+  const [unitsLoading, setUnitsLoading] = useState(false);
+  const [bookingUnitId, setBookingUnitId] = useState(null);
+  const [bookingSuccess, setBookingSuccess] = useState('');
   const { propertyId } = useParams();
   const navigate = useNavigate();
-  const [showUnitsModal, setShowUnitsModal] = useState(false);
-const [availableUnits, setAvailableUnits] = useState([]);
-const [unitsLoading, setUnitsLoading] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('kwetupay_user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
       fetchProperty();
+      if (parsedUser.role === 'tenant') {
+        fetchAvailableUnits();
+      }
     }
   }, [propertyId]);
 
@@ -61,39 +66,61 @@ const [unitsLoading, setUnitsLoading] = useState(false);
     });
   };
 
-  const handleBook = async () => {
-    if (!window.confirm(`Are you sure you want to book "${property.title}"?`)) {
+  const fetchAvailableUnits = async () => {
+    try {
+      setUnitsLoading(true);
+      const response = await propertyAPI.getPropertyUnits(propertyId);
+      if (response.data.status === 'success') {
+        setAvailableUnits(response.data.data.units || []);
+      }
+    } catch (error) {
+      console.error('Error fetching units:', error);
+    } finally {
+      setUnitsLoading(false);
+    }
+  };
+
+  const handleBookUnit = async (unit) => {
+    if (!window.confirm(`Book Unit ${unit.unit_number} at "${property.title}"?\n\nRent: ${formatPrice(unit.rent_amount)}/month`)) {
       return;
     }
 
-    setActionLoading('booking');
-    
+    setBookingUnitId(unit.unit_id);
+    setBookingSuccess('');
+
     try {
       const startDate = new Date();
-      const endDate = new Date();
+      startDate.setDate(startDate.getDate() + 1);
+      const endDate = new Date(startDate);
       endDate.setFullYear(endDate.getFullYear() + 1);
 
-      const bookingData = {
-        property_id: property.property_id,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-        total_rent: property.rent_amount,
-        special_terms: 'Interested in viewing the property'
+      const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       };
 
-      const response = await bookingAPI.create(bookingData);
-      
+      const response = await bookingAPI.create({
+        property_id: property.property_id,
+        unit_id: unit.unit_id,
+        start_date: fmt(startDate),
+        end_date: fmt(endDate),
+        total_rent: unit.rent_amount,
+        special_terms: `Booking request for Unit ${unit.unit_number}`
+      });
+
       if (response.data.status === 'success') {
-        alert('🎉 Booking request sent successfully! The landlord will contact you soon.');
+        setBookingSuccess(`Booking request sent for Unit ${unit.unit_number}! The landlord will review and respond.`);
+        fetchAvailableUnits();
       } else {
         alert(response.data.message || 'Booking failed. Please try again.');
       }
     } catch (error) {
       console.error('Booking error:', error);
-      const errorMessage = error.response?.data?.message || 'Error creating booking. Please try again.';
-      alert(errorMessage);
+      alert(error.response?.data?.message || 'Error creating booking. Please try again.');
     } finally {
-      setActionLoading('');
+      setBookingUnitId(null);
     }
   };
 
@@ -242,6 +269,47 @@ const [unitsLoading, setUnitsLoading] = useState(false);
               </div>
             </div>
 
+            {/* Extended Location Info */}
+            {(property.location_details?.shopping_centre || property.location_details?.nearby_roads) && (
+              <div className="property-location-extra">
+                {property.location_details.shopping_centre && (
+                  <div className="location-extra-item">
+                    <span>🏬</span>
+                    <span><strong>Shopping:</strong> {property.location_details.shopping_centre}</span>
+                  </div>
+                )}
+                {property.location_details.nearby_roads && (
+                  <div className="location-extra-item">
+                    <span>🛣️</span>
+                    <span><strong>Near:</strong> {property.location_details.nearby_roads}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Google Maps */}
+            {property.latitude && property.longitude && (
+              <div className="property-map-section">
+                <div className="map-header">
+                  <h3>📍 Location on Map</h3>
+                  <a
+                    href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="open-maps-btn"
+                  >
+                    Open in Google Maps ↗
+                  </a>
+                </div>
+                <iframe
+                  title="Property location"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${property.longitude - 0.01},${property.latitude - 0.01},${property.longitude + 0.01},${property.latitude + 0.01}&layer=mapnik&marker=${property.latitude},${property.longitude}`}
+                  style={{ width: '100%', height: '280px', border: 'none', borderRadius: '8px' }}
+                  loading="lazy"
+                />
+              </div>
+            )}
+
             <div className="property-description-details">
               <h3>Description</h3>
               <p>{property.description || 'No description provided.'}</p>
@@ -310,53 +378,105 @@ const [unitsLoading, setUnitsLoading] = useState(false);
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="property-actions-details">
-              {user?.role === 'tenant' ? (
-                <>
-                  <button 
-                    onClick={handleContact}
-                    className="contact-btn-large"
-                    disabled={!property.is_available}
-                  >
-                    💬 Contact Landlord
-                  </button>
-                  <button 
-                    onClick={handleBook}
-                    className="book-btn-large"
-                    disabled={!property.is_available || actionLoading === 'booking'}
-                  >
-                    {actionLoading === 'booking' ? 'Sending Request...' : '📝 Book This Property'}
-                  </button>
-                </>
-              ) : user?.role === 'landlord' && user.user_id === property.landlord_id ? (
-                <>
-                  <button 
-                    onClick={handleToggleAvailability}
-                    className={`availability-btn-large ${property.is_available ? 'make-unavailable' : 'make-available'}`}
-                    disabled={actionLoading === 'availability'}
-                  >
-                    {actionLoading === 'availability' ? 'Updating...' : 
-                     (property.is_available ? 'Mark as Rented' : 'Mark Available')}
-                  </button>
-                  <button 
-                    onClick={handleEdit}
-                    className="edit-btn-large"
-                  >
-                    ✏️ Edit Property
-                  </button>
-                </>
-              ) : null}
-              
-              <button 
-                onClick={() => navigate('/properties')}
-                className="back-btn"
-              >
-                ← Back to Properties
-              </button>
-            </div>
+            {/* Tenant Contact Button */}
+            {user?.role === 'tenant' && (
+              <div className="property-actions-details">
+                <button onClick={handleContact} className="contact-btn-large">
+                  💬 Contact Landlord
+                </button>
+                <button onClick={() => navigate(-1)} className="back-btn">
+                  ← Back
+                </button>
+              </div>
+            )}
+
+            {/* Landlord Controls */}
+            {user?.role === 'landlord' && user.user_id === property.landlord_id && (
+              <div className="property-actions-details">
+                <button
+                  onClick={handleToggleAvailability}
+                  className={`availability-btn-large ${property.is_available ? 'make-unavailable' : 'make-available'}`}
+                  disabled={actionLoading === 'availability'}
+                >
+                  {actionLoading === 'availability' ? 'Updating...' :
+                    (property.is_available ? 'Mark as Rented' : 'Mark Available')}
+                </button>
+                <button onClick={handleEdit} className="edit-btn-large">
+                  ✏️ Edit Property
+                </button>
+                <button onClick={() => navigate(-1)} className="back-btn">
+                  ← Back
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Available Units — tenant view */}
+        {user?.role === 'tenant' && (
+          <div className="available-units-section">
+            <h3>🏘️ Available Units</h3>
+
+            {bookingSuccess && (
+              <div className="units-booking-success">
+                ✅ {bookingSuccess}
+                <button onClick={() => setBookingSuccess('')} className="close-success">×</button>
+              </div>
+            )}
+
+            {unitsLoading ? (
+              <div className="loading-section">
+                <div className="loading-spinner"></div>
+                <p>Loading available units...</p>
+              </div>
+            ) : availableUnits.length === 0 ? (
+              <div className="no-units-available">
+                <p>No units are currently available in this property.</p>
+              </div>
+            ) : (
+              <div className="units-booking-grid">
+                {availableUnits.map(unit => (
+                  <div key={unit.unit_id} className="unit-booking-card">
+                    <div className="unit-booking-header">
+                      <div>
+                        <h4>Unit {unit.unit_number}</h4>
+                        <span className="unit-type-badge">{unit.unit_type}</span>
+                      </div>
+                      <div className="unit-booking-price">
+                        {formatPrice(unit.rent_amount)}<span>/month</span>
+                      </div>
+                    </div>
+
+                    <div className="unit-booking-specs">
+                      {unit.specifications?.bedrooms && <span>🛏️ {unit.specifications.bedrooms} bed</span>}
+                      {unit.specifications?.bathrooms && <span>🚿 {unit.specifications.bathrooms} bath</span>}
+                      {unit.specifications?.area_sqft && <span>📐 {unit.specifications.area_sqft} sqft</span>}
+                    </div>
+
+                    {unit.amenities && Object.values(unit.amenities).some(Boolean) && (
+                      <div className="unit-booking-amenities">
+                        {Object.entries(unit.amenities)
+                          .filter(([, v]) => v)
+                          .slice(0, 4)
+                          .map(([key]) => (
+                            <span key={key} className="amenity-chip">{key}</span>
+                          ))}
+                      </div>
+                    )}
+
+                    <button
+                      className="book-unit-btn-large"
+                      onClick={() => handleBookUnit(unit)}
+                      disabled={bookingUnitId === unit.unit_id}
+                    >
+                      {bookingUnitId === unit.unit_id ? '⏳ Sending...' : '📝 Book This Unit'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

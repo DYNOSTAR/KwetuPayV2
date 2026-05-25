@@ -57,7 +57,7 @@ const Properties = () => {
     try {
       setUnitsLoading(prev => ({ ...prev, [propertyId]: true }));
       
-      const response = await propertyAPI.getPropertyUnits(propertyId);
+      const response = await propertyAPI.getPropertyUnitsLandlord(propertyId);
       
       if (response.data.status === 'success') {
         setPropertyUnits(prev => ({
@@ -251,8 +251,14 @@ const Properties = () => {
           <div className="properties-list">
             {properties.map((property, index) => (
               <div key={property.property_id} className="property-card">
+                {/* Property Image */}
+                {property.images && property.images.length > 0 ? (
+                  <img src={property.images[0]} alt={property.title} className="property-card-image" onClick={() => togglePropertyExpansion(property.property_id)} />
+                ) : (
+                  <div className="property-image-placeholder" onClick={() => togglePropertyExpansion(property.property_id)}>🏠</div>
+                )}
                 {/* Property Header */}
-                <div 
+                <div
                   className={`property-header ${!property.is_available ? 'unavailable' : ''}`}
                   onClick={() => togglePropertyExpansion(property.property_id)}
                 >

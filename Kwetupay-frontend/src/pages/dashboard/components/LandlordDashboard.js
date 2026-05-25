@@ -56,7 +56,7 @@ const LandlordDashboard = ({ user }) => {
 
       for (const property of properties) {
         try {
-          const unitsResponse = await propertyAPI.getPropertyUnits(property.property_id);
+          const unitsResponse = await propertyAPI.getPropertyUnitsLandlord(property.property_id);
           const units = unitsResponse.data.data?.units || [];
           unitsMap[property.property_id] = units;
           
@@ -75,7 +75,7 @@ const LandlordDashboard = ({ user }) => {
       // Fetch landlord's bookings
       let bookings = [];
       try {
-        const bookingsResponse = await bookingAPI.getLandlordBookings();
+        const bookingsResponse = await bookingAPI.getLandlordBookings(); // all statuses
         console.log('Bookings response:', bookingsResponse);
         bookings = bookingsResponse.data.data?.bookings || [];
         console.log('Found bookings:', bookings.length);
@@ -223,12 +223,12 @@ const LandlordDashboard = ({ user }) => {
       color: 'success', 
       link: '/reports' 
     },
-    { 
-      title: 'Pending Bookings', 
-      value: dashboardData.pendingBookings.toString(), 
-      icon: '📋', 
-      color: 'warning', 
-      link: '/bookings' 
+    {
+      title: 'Pending Bookings',
+      value: dashboardData.pendingBookings.toString(),
+      icon: '📋',
+      color: 'warning',
+      link: '/bookings/requests'
     }
   ];
 
@@ -240,39 +240,32 @@ const LandlordDashboard = ({ user }) => {
       onClick: () => navigate('/properties/create'),
       color: 'primary'
     },
-    { 
-      label: 'Manage Units', 
-      icon: '🏠', 
+    {
+      label: 'Manage Units',
+      icon: '🏠',
       description: 'View and manage all property units',
-      onClick: () => navigate('/properties/units'),
+      onClick: () => navigate('/properties'),
       color: 'secondary'
     },
-    { 
-      label: 'Add New Unit', 
-      icon: '➕', 
-      description: 'Add unit to existing property',
-      onClick: () => navigate('/properties/add-unit'),
-      color: 'primary'
-    },
-    { 
-      label: 'Booking Requests', 
-      icon: '📋', 
+    {
+      label: 'Booking Requests',
+      icon: '📋',
       description: 'Manage tenant booking requests',
-      onClick: () => navigate('/bookings'),
+      onClick: () => navigate('/bookings/requests'),
       color: 'info'
     },
-    { 
-      label: 'Tenant Management', 
-      icon: '👥', 
+    {
+      label: 'Tenant Management',
+      icon: '👥',
       description: 'Manage current tenants',
       onClick: () => navigate('/tenants'),
       color: 'success'
     },
-    { 
-      label: 'Maintenance', 
-      icon: '🛠️', 
-      description: 'Manage unit maintenance',
-      onClick: () => navigate('/maintenance'),
+    {
+      label: 'Maintenance',
+      icon: '🛠️',
+      description: 'Review maintenance requests from tenants',
+      onClick: () => navigate('/maintenance/overview'),
       color: 'warning'
     }
   ];
@@ -381,7 +374,7 @@ const LandlordDashboard = ({ user }) => {
         <section className="activity-section">
           <div className="section-header">
             <h3>Recent Booking Requests</h3>
-            <button className="view-all-btn" onClick={() => navigate('/bookings')}>
+            <button className="view-all-btn" onClick={() => navigate('/bookings/requests')}>
               View All
             </button>
           </div>

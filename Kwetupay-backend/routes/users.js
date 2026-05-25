@@ -120,4 +120,28 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Update landlord bank details
+router.put('/bank-details', authenticateToken, async (req, res) => {
+  try {
+    const { bank_name, account_name, account_number, branch, paybill_number, paybill_account } = req.body;
+
+    if (!bank_name || !account_name || !account_number)
+      return res.status(400).json({ status: 'error', message: 'bank_name, account_name, and account_number are required' });
+
+    const bankDetails = { bank_name, account_name, account_number, branch, paybill_number, paybill_account };
+    // Remove empty fields
+    Object.keys(bankDetails).forEach(k => { if (!bankDetails[k]) delete bankDetails[k]; });
+
+    await query(
+      'UPDATE users SET bank_details = $1 WHERE user_id = $2',
+      [JSON.stringify(bankDetails), req.user.user_id]
+    );
+
+    res.json({ status: 'success', message: 'Bank details saved', data: { bank_details: bankDetails } });
+  } catch (error) {
+    console.error('Bank details update error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to save bank details' });
+  }
+});
+
 module.exports = router;

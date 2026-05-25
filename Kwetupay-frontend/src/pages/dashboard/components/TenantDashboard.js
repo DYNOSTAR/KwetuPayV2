@@ -111,11 +111,11 @@ const TenantDashboard = ({ user }) => {
       onClick: () => navigate('/messages'),
       description: 'Chat with landlords'
     },
-    { 
-      label: 'Payment History', 
-      icon: '💳', 
-      onClick: () => alert('Payment history coming soon!'),
-      description: 'View past payments'
+    {
+      label: 'Payments',
+      icon: '💳',
+      onClick: () => navigate('/payments'),
+      description: 'View and make rent payments'
     },
   ];
 

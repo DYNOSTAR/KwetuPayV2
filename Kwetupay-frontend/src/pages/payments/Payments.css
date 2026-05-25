@@ -415,6 +415,64 @@
   cursor: not-allowed;
 }
 
+.section-subtitle {
+  color: #6c757d;
+  margin: -10px 0 20px 0;
+  font-size: 0.95rem;
+}
+
+.first-payment-card {
+  border-left-color: #fd7e14;
+}
+
+.first-payment-breakdown {
+  background: #fff8f0;
+  border: 1px solid #fde8ca;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin: 12px 0;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.breakdown-total {
+  border-top: 2px solid #fd7e14;
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.first-payment-btn {
+  background: #fd7e14;
+}
+
+.first-payment-btn:hover:not(:disabled) {
+  background: #e06500;
+}
+
+.payment-type-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.first-payment-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: #856404;
+  margin-top: 10px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .stats-grid {
@@ -443,4 +501,323 @@
     font-weight: 600;
     color: #495057;
   }
+}
+/* ── Method tabs ──────────────────────────────── */
+.pay-method-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0 16px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.pay-method-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.pay-method-tab .tab-icon { font-size: 20px; }
+
+.pay-method-tab.active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+}
+
+.pay-method-tab:hover:not(.active) { color: #374151; }
+
+/* ── Pay panel (M-Pesa / Bank) ────────────────── */
+.pay-panel { padding: 8px 0; }
+
+.pay-modal-wide { max-width: 560px !important; }
+
+.pay-modal-summary {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 4px;
+}
+
+.pay-modal-property { font-size: 16px; margin-bottom: 10px; color: #1f2937; }
+
+.compact .breakdown-row { padding: 6px 0; font-size: 14px; }
+
+.amount-due {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #374151;
+}
+
+/* ── M-Pesa steps ─────────────────────────────── */
+.mpesa-how {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.mpesa-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.phone-input-row {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: white;
+}
+
+.phone-prefix {
+  padding: 14px 12px;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+  font-size: 15px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.phone-input-row input {
+  border: none !important;
+  border-radius: 0 !important;
+  flex: 1;
+  padding: 14px !important;
+  font-size: 16px;
+}
+
+.phone-input-row input:focus { box-shadow: none !important; transform: none !important; }
+
+.mpesa-note {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #92400e;
+  margin-top: 12px;
+}
+
+/* ── Bank details card ────────────────────────── */
+.bank-details-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.bank-details-card h4 {
+  color: #065f46;
+  margin: 0 0 14px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bank-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #d1fae5;
+  font-size: 14px;
+  color: #374151;
+}
+
+.bank-detail-row:last-child { border-bottom: none; }
+
+.bank-detail-row span:first-child { color: #6b7280; }
+
+.bank-detail-divider {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+.copyable {
+  font-family: 'Courier New', monospace;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.bank-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 2px solid #10b981;
+  font-size: 14px;
+}
+
+.bank-amount {
+  font-size: 20px;
+  color: #10b981;
+}
+
+.bank-details-unavailable {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  padding: 16px;
+  color: #c2410c;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.loading-inline {
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+/* ── Modal message ────────────────────────────── */
+.modal-message {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin: 12px 0 4px;
+}
+
+.modal-message.success {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.modal-message.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+/* ── Pending bank payments (landlord) ─────────── */
+.pending-bank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.pending-bank-card {
+  background: white;
+  border: 2px solid #fcd34d;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.pending-bank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.pending-bank-header strong { color: #1f2937; font-size: 16px; }
+.pending-bank-header p { color: #6b7280; font-size: 13px; margin: 4px 0 0; }
+
+.pending-bank-details { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+.bank-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #374151;
+}
+
+.bank-info-row span:first-child { color: #9ca3af; }
+
+.bank-ref-code {
+  font-family: monospace;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.pending-bank-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-confirm-payment {
+  flex: 2;
+  padding: 10px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-confirm-payment:hover:not(:disabled) { background: #059669; }
+
+.btn-reject-payment {
+  flex: 1;
+  padding: 10px;
+  background: white;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reject-payment:hover:not(:disabled) { background: #fee2e2; }
+
+.btn-confirm-payment:disabled,
+.btn-reject-payment:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.section-subtitle {
+  color: #6b7280;
+  margin: -8px 0 16px;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .pay-method-tab { padding: 10px 12px; font-size: 13px; }
+  .pending-bank-grid { grid-template-columns: 1fr; }
+  .pay-modal-wide { max-width: 100% !important; }
 }
